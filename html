@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Anti-Deepfake Liveness & Identity Layer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0b1020;
+      color: #f5f7ff;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: center;
+    }
+    .app {
+      max-width: 900px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 24px;
+    }
+    .card {
+      background: rgba(17, 24, 48, 0.95);
+      border-radius: 18px;
+      padding: 20px 20px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+    h1 {
+      font-size: 1.6rem;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      font-size: 0.9rem;
+      color: #a5b4fc;
+      margin-bottom: 18px;
+    }
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 8px;
+      color: #e5e7eb;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+    .label {
+      font-weight: 600;
+      color: #9ca3af;
+      min-width: 110px;
+    }
+    .value {
+      color: #f9fafb;
+      word-break: break-all;
+    }
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4f46e5, #06b6d4);
+      color: white;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s ease;
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.45);
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(59, 130, 246, 0.6);
+    }
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .pill {
+      font-size: 0.78rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+    .pill-dot.red {
+      background: #ef4444;
+    }
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
+    }
+    .status {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+    .status strong {
+      color: #e5e7eb;
+    }
+    .badge-good {
+      color: #bbf7d0;
+    }
+    .badge-warn {
+      color: #fde68a;
+    }
+    .badge-bad {
+      color: #fecaca;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 8px;
+      min-height: 100px;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.95);
+      color: #e5e7eb;
+      padding: 8px;
+      resize: vertical;
+      font-size: 0.8rem;
+    }
+    .token-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .token-header small {
+      font-size: 0.75rem;
+      color: #9ca3af;
+    }
+    .token-section {
+      margin-top: 8px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+    .metric {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+    .metric span {
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+    @media (max-width: 720px) {
+      .two-col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .app {
+        padding: 16px 12px 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <h1>Anti-Deepfake Liveness & Identity Layer</h1>
+      <p class="subtitle">
+        Wallet-bound, device-bound liveness token &mdash; all static, runs entirely in your browser on GitHub Pages.
+      </p>
+    </div>
+
+    <!-- Identity & Device -->
+    <div class="card">
+      <h2>1. Identity & Device Anchor</h2>
+      <div class="row">
+        <div class="label">Device ID</div>
+        <div class="value mono" id="deviceIdValue">Loading…</div>
+      </div>
+      <div class="row">
+        <div class="label">Wallet</div>
+        <div class="value mono" id="walletAddress">Not connected</div>
+      </div>
+      <div class="row">
+        <div class="label">Status</div>
+        <div class="value">
+          <span class="pill" id="walletStatusPill">
+            <span class="pill-dot red"></span>
+            Wallet not connected
+          </span>
+        </div>
+      </div>
+      <div class="row">
+        <button id="connectWalletBtn">Connect Wallet</button>
+        <span class="status" id="walletStatusText"></span>
+      </div>
+    </div>
+
+    <!-- Liveness -->
+    <div class="card">
+      <h2>2. Liveness & Anti-Deepfake Check</h2>
+      <div class="row">
+        <div class="label">Check Type</div>
+        <div class="value mono">liveness_rPPG_v1</div>
+      </div>
+      <div class="row">
+        <div class="label">Binding</div>
+        <div class="value mono">did:ethr:&lt;wallet&gt; + deviceId</div>
+      </div>
+
+      <div class="row">
+        <button id="runLivenessBtn" disabled>Run Liveness Check</button>
+        <span class="status" id="livenessStatusText">
+          Connect a wallet to activate liveness.
+        </span>
+      </div>
+
+      <div class="two-col" style="margin-top: 8px;">
+        <div>
+          <div class="metric">
+            Heart rate: <span id="metricHr">-- bpm</span>
+          </div>
+          <div class="metric">
+            Confidence: <span id="metricConfidence">--</span>
+          </div>
+          <div class="metric">
+            Result: <span id="metricResult">--</span>
+          </div>
+        </div>
+        <div>
+          <div class="metric">
+            Issued at: <span id="metricIat">--</span>
+          </div>
+          <div class="metric">
+            Valid until: <span id="metricExp">--</span>
+          </div>
+          <div class="metric">
+            Session ID: <span id="metricSession">--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token -->
+    <div class="card">
+      <div class="token-header">
+        <h2>3. Liveness Token (JWT-shaped)</h2>
+        <small>
+          Signed locally for this static version. In production, sign with a secure backend key.
+        </small>
+      </div>
+
+      <div class="token-section">
+        <textarea id="tokenOutput" class="mono" readonly placeholder="Run a liveness check to generate a token."></textarea>
+        <div class="row" style="margin-top: 8px;">
+          <button id="copyTokenBtn" disabled>Copy Token</button>
+          <span class="status" id="tokenStatusText"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="card">
+      <h2>How this model works (summary)</h2>
+      <ul style="font-size:0.85rem; color:#9ca3af; padding-left:18px; margin: 6px 0 0;">
+        <li>Identity = <span class="mono">did:ethr:&lt;wallet&gt;</span> (derived from your connected wallet).</li>
+        <li>Each browser has a stable, pseudonymous <strong>deviceId</strong> stored locally (no server).</li>
+        <li>On "Run Liveness Check", this page simulates a liveness result and issues a short-lived, JWT-shaped token.</li>
+        <li>Your production system can replace the simulation with a real rPPG / anti-deepfake pipeline and move signing into a secure backend.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // === Utility ===
+    function base64UrlEncode(str) {
+      return btoa(str)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
+    }
+
+    function generateSessionId() {
+      const random = crypto.getRandomValues(new Uint8Array(16));
+      return Array.from(random, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function getOrCreateDeviceId() {
+      const key = "liveness_device_id";
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = crypto.randomUUID ? crypto.randomUUID() : generateSessionId();
+        localStorage.setItem(key, id);
+      }
+      return id;
+    }
+
+    function formatTimestamp(tsSeconds) {
+      const d = new Date(tsSeconds * 1000);
+      return d.toISOString();
+    }
+
+    // === State ===
+    const state = {
+      deviceId: null,
+      walletAddress: null,
+      hasEthereum: typeof window.ethereum !== "undefined",
+    };
+
+    // === DOM Elements ===
+    const deviceIdValue = document.getElementById("deviceIdValue");
+    const walletAddressEl = document.getElementById("walletAddress");
+    const walletStatusPill = document.getElementById("walletStatusPill");
+    const walletStatusText = document.getElementById("walletStatusText");
+    const connectWalletBtn = document.getElementById("connectWalletBtn");
+    const runLivenessBtn = document.getElementById("runLivenessBtn");
+    const livenessStatusText = document.getElementById("livenessStatusText");
+    const metricHr = document.getElementById("metricHr");
+    const metricConfidence = document.getElementById("metricConfidence");
+    const metricResult = document.getElementById("metricResult");
+    const metricIat = document.getElementById("metricIat");
+    const metricExp = document.getElementById("metricExp");
+    const metricSession = document.getElementById("metricSession");
+    const tokenOutput = document.getElementById("tokenOutput");
+    const copyTokenBtn = document.getElementById("copyTokenBtn");
+    const tokenStatusText = document.getElementById("tokenStatusText");
+
+    // === Init device ===
+    function initDevice() {
+      const id = getOrCreateDeviceId();
+      state.deviceId = id;
+      deviceIdValue.textContent = id;
+
+      if (!state.hasEthereum) {
+        walletStatusText.innerHTML =
+          "No injected wallet detected. Install MetaMask or a compatible wallet to bind liveness to a DID.";
+      }
+    }
+
+    // === Wallet connection ===
+    async function connectWallet() {
+      tokenStatusText.textContent = "";
+      livenessStatusText.textContent = "";
+
+      if (!state.hasEthereum) {
+        walletStatusText.innerHTML =
+          "<strong>No wallet found.</strong> Please install MetaMask or another EVM wallet.";
+        return;
+      }
+
+      try {
+        walletStatusText.textContent = "Requesting accounts from wallet…";
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (!accounts || !accounts.length) {
+          walletStatusText.textContent = "No account selected.";
+          return;
+        }
+
+        const addr = accounts[0];
+        state.walletAddress = addr;
+        walletAddressEl.textContent = addr;
+
+        walletStatusPill.innerHTML =
+          '<span class="pill-dot"></span> Wallet connected';
+        walletStatusText.innerHTML =
+          'Wallet bound as <span class="mono">did:ethr:' +
+          addr +
+          "</span>";
+
+        runLivenessBtn.disabled = false;
+        livenessStatusText.textContent =
+          "Ready. Click “Run Liveness Check” to generate a token.";
+      } catch (err) {
+        console.error(err);
+        walletStatusText.textContent =
+          "Wallet connection was cancelled or failed.";
+      }
+    }
+
+    // === Simulated liveness ===
+    function simulateLiveness() {
+      // In your production system, plug in your real camera + rPPG pipeline here.
+      // We just simulate a plausible HR + confidence.
+      const hr = 70 + Math.floor(Math.random() * 16); // 70–85 bpm
+      const confidence = 0.93 + Math.random() * 0.05; // 0.93–0.98
+      return { hr, confidence: Number(confidence.toFixed(3)) };
+    }
+
+    async function runLiveness() {
+      tokenOutput.value = "";
+      tokenStatusText.textContent = "";
+      metricHr.textContent = "-- bpm";
+      metricConfidence.textContent = "--";
+      metricResult.textContent = "--";
+      metricIat.textContent = "--";
+      metricExp.textContent = "--";
+      metricSession.textContent = "--";
+      copyTokenBtn.disabled = true;
+
+      if (!state.walletAddress) {
+        livenessStatusText.textContent =
+          "Connect a wallet first to bind the session.";
+        return;
+      }
+
+      runLivenessBtn.disabled = true;
+      runLivenessBtn.textContent = "Running…";
+      livenessStatusText.textContent =
+        "Running local liveness pipeline (simulated)…";
+
+      // Simulate processing delay
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const { hr, confidence } = simulateLiveness();
+      const nowSec = Math.floor(Date.now() / 1000);
+      const validForSeconds = 600; // 10 minutes
+      const expSec = nowSec + validForSeconds;
+      const sessionId = generateSessionId();
+
+      // Build JWT-shaped token
+      const did = "did:ethr:" + state.walletAddress;
+
+      const header = {
+        alg: "HS256",
+        typ: "JWT",
+        kid: "local-demo-key",
+      };
+
+      const payload = {
+        sub: did,
+        device_id: state.deviceId,
+        check_type: "liveness_rPPG_v1",
+        result: "pass",
+        confidence: confidence,
+        hr_bpm: hr,
+        iat: nowSec,
+        exp: expSec,
+        jti: sessionId,
+        model_version: "liveness-2.1.0",
+      };
+
+      const encodedHeader = base64UrlEncode(JSON.stringify(header));
+      const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+
+      // In a real system, sign encodedHeader + "." + encodedPayload with a server-side key.
+      // Here we use a fixed demo string to keep this file fully static.
+      const demoSignature = base64UrlEncode("local-demo-signature");
+      const token = encodedHeader + "." + encodedPayload + "." + demoSignature;
+
+      // Update metrics
+      metricHr.textContent = hr + " bpm";
+      metricConfidence.textContent = (confidence * 100).toFixed(1) + " %";
+      metricResult.innerHTML = '<span class="badge-good">PASS</span>';
+      metricIat.textContent = formatTimestamp(nowSec);
+      metricExp.textContent = formatTimestamp(expSec);
+      metricSession.textContent = sessionId;
+
+      // Update token
+      tokenOutput.value = token;
+      copyTokenBtn.disabled = false;
+      livenessStatusText.innerHTML =
+        "Liveness completed. Token is bound to <span class=\"mono\">" +
+        did +
+        "</span> and deviceId.";
+
+      runLivenessBtn.disabled = false;
+      runLivenessBtn.textContent = "Run Liveness Check";
+    }
+
+    async function copyToken() {
+      const token = tokenOutput.value.trim();
+      if (!token) return;
+
+      try {
+        await navigator.clipboard.writeText(token);
+        tokenStatusText.textContent = "Token copied to clipboard.";
+      } catch (err) {
+        console.error(err);
+        tokenStatusText.textContent =
+          "Unable to copy automatically. Please copy manually.";
+      }
+    }
+
+    // === Event listeners ===
+    connectWalletBtn.addEventListener("click", connectWallet);
+    runLivenessBtn.addEventListener("click", runLiveness);
+    copyTokenBtn.addEventListener("click", copyToken);
+
+    // === Startup ===
+    initDevice();
+  </script>
+</body>
+</html>
