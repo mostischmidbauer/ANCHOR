@@ -2,364 +2,669 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Anti-Deepfake Session Token Builder</title>
+  <title>Encounter Liveness & Anti-Deepfake + Optical HR (rPPG)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #020617;
-      color: #e5e7eb;
-    }
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
       min-height: 100vh;
+      background: #0b1020;
+      color: #f5f5f5;
       display: flex;
-      align-items: center;
-      justify-content: center;
+      flex-direction: column;
     }
-    .app {
-      max-width: 960px;
-      width: 100%;
-      padding: 24px 16px 32px;
-      box-sizing: border-box;
+
+    .app-header {
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      background: #12172a;
+      border-bottom: 1px solid #262c4a;
     }
-    .card {
-      background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.3), transparent 55%),
-                  radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 55%),
-                  rgba(15, 23, 42, 0.96);
-      border-radius: 18px;
-      padding: 20px;
-      margin-bottom: 14px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
-      border: 1px solid rgba(148, 163, 184, 0.4);
+
+    .app-header h1 {
+      font-size: 1.6rem;
+      margin-bottom: 0.25rem;
     }
-    h1 {
-      margin: 0 0 6px;
-      font-size: 1.5rem;
+
+    .app-header p {
+      font-size: 0.95rem;
+      opacity: 0.85;
     }
-    .subtitle {
-      font-size: 0.9rem;
-      color: #9ca3af;
-      margin-bottom: 18px;
-    }
-    h2 {
-      margin: 0 0 8px;
-      font-size: 1.05rem;
-      color: #e5e7eb;
-    }
-    .row {
+
+    .app-main {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 0.9rem;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
     }
-    .label {
-      font-weight: 600;
-      color: #9ca3af;
-      min-width: 120px;
+
+    .camera-card,
+    .info-card {
+      background: #151a30;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      border: 1px solid #262c4a;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
     }
-    .value {
-      flex: 1;
+
+    .video-container {
+      position: relative;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background:#000;
+      max-width:640px;
+      margin: 0 auto;
     }
-    .pill {
-      font-size: 0.78rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      color: #e5e7eb;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+
+    video {
+      width:100%;
+      display:block;
+      object-fit: cover;
+      transform: scale(1.2); /* digital zoom for eye contact */
     }
-    .pill-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
+
+    .overlay {
+      position:absolute;
+      inset:0;
+      background:rgba(0,0,0,0.45);
+      display:flex;
+      justify-content:center;
+      align-items:center;
     }
-    .pill-dot.red {
-      background: #ef4444;
+
+    .overlay span {
+      background:rgba(0,0,0,0.6);
+      padding:0.6rem 1rem;
+      border-radius:999px;
+      border:1px solid #fff;
+      font-size:0.9rem;
+      text-align:center;
     }
-    .mono {
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
-      font-size: 0.8rem;
-      word-break: break-all;
+
+    .hidden { display:none !important; }
+
+    .controls {
+      margin-top:1rem;
+      display:flex;
+      gap:0.5rem;
+      justify-content:center;
+      flex-wrap:wrap;
     }
+
     button {
-      border-radius: 999px;
-      border: none;
-      padding: 8px 18px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: linear-gradient(135deg, #4f46e5, #06b6d4);
-      color: white;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: transform 0.08s ease, box-shadow 0.08s ease, opacity 0.1s ease;
-      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.45);
+      border:none;
+      border-radius:999px;
+      padding:0.5rem 1rem;
+      color:white;
+      background:#246bfd;
+      cursor:pointer;
+      font-size:0.9rem;
+      transition:0.1s ease all;
     }
-    button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 30px rgba(59, 130, 246, 0.6);
-    }
-    button:active:not(:disabled) {
-      transform: translateY(0);
-      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-    }
+
     button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      box-shadow: none;
+      opacity:0.5;
+      cursor:default;
     }
-    input, select, textarea {
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 10px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      background: rgba(15, 23, 42, 0.96);
-      color: #e5e7eb;
-      padding: 6px 8px;
-      font-size: 0.84rem;
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow:0 4px 10px rgba(36,107,253,0.6);
+      background:#2a7bff;
     }
-    input::placeholder,
-    textarea::placeholder {
-      color: #6b7280;
+
+    .status {
+      margin-top:1rem;
+      border-top:1px solid #262c4a;
+      padding-top:0.75rem;
+      font-size:0.9rem;
     }
-    textarea {
-      resize: vertical;
-      min-height: 64px;
+
+    .status-row {
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:0.4rem;
     }
-    .small {
-      font-size: 0.78rem;
-      color: #9ca3af;
+
+    progress {
+      width:100%;
+      height:0.6rem;
+      border-radius:999px;
+      overflow:hidden;
     }
-    .two-col {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 10px;
+
+    progress::-webkit-progress-bar { background:#20263d; }
+    progress::-webkit-progress-value { background:#24d18f; }
+    progress::-moz-progress-bar { background:#24d18f; }
+
+    .disclaimer {
+      margin-top:0.8rem;
+      font-size:0.8rem;
+      opacity:0.8;
     }
-    .status-bar {
-      font-size: 0.85rem;
-      color: #9ca3af;
-      min-height: 1.2em;
+
+    .info-card h2 { font-size:1.2rem; margin-bottom:0.4rem; }
+    .info-card p { font-size:0.9rem; opacity:0.9; }
+
+    /* HR block */
+    .hr-block {
+      margin-top:0.8rem;
+      padding-top:0.6rem;
+      border-top:1px solid #262c4a;
+      font-size:0.9rem;
     }
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 9px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      border: 1px solid rgba(148, 163, 184, 0.8);
+
+    .hr-top-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:0.2rem;
+      gap:0.5rem;
     }
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #22c55e;
+
+    .hr-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:0.2rem;
+      gap:0.5rem;
     }
-    .dot.red { background: #ef4444; }
-    pre {
-      margin: 4px 0 0;
-      padding: 6px 8px;
-      border-radius: 10px;
-      background: rgba(15, 23, 42, 0.96);
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      font-size: 0.78rem;
-      overflow-x: auto;
+
+    .hr-value { font-weight:bold; font-size:1rem; }
+    .hr-status { font-size:0.8rem; opacity:0.9; }
+    .hr-debug { font-size:0.75rem; opacity:0.7; margin-top:0.1rem; white-space:pre-line; }
+    .hr-warning { font-size:0.75rem; opacity:0.7; margin-top:0.25rem; }
+
+    .quality-dot {
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      display:inline-block;
+      margin-right:0.4rem;
+      background:#555;
+      border:1px solid #222;
     }
-    @media (max-width: 768px) {
-      .two-col {
-        grid-template-columns: minmax(0, 1fr);
+    .quality-dot.green { background:#24d18f; }
+    .quality-dot.red { background:#ff4d4d; }
+
+    /* Form block */
+    .meta-form {
+      margin-top:0.9rem;
+      padding-top:0.7rem;
+      border-top:1px solid #262c4a;
+      font-size:0.9rem;
+    }
+
+    .meta-row {
+      display:flex;
+      gap:0.75rem;
+      margin-bottom:0.4rem;
+      flex-wrap:wrap;
+    }
+
+    .meta-field {
+      flex:1 1 180px;
+      display:flex;
+      flex-direction:column;
+      gap:0.2rem;
+    }
+
+    .meta-field label {
+      font-size:0.8rem;
+      opacity:0.85;
+    }
+
+    .meta-field input,
+    .meta-field textarea,
+    .meta-field select {
+      border-radius:0.5rem;
+      border:1px solid #262c4a;
+      padding:0.3rem 0.5rem;
+      background:#101429;
+      color:#f5f5f5;
+      font-size:0.85rem;
+    }
+
+    .meta-actions {
+      display:flex;
+      gap:0.5rem;
+      flex-wrap:wrap;
+      margin-top:0.4rem;
+      align-items:center;
+    }
+
+    .log-status {
+      font-size:0.8rem;
+      opacity:0.8;
+    }
+
+    .compliance-badge {
+      margin-top:0.75rem;
+      font-size:0.8rem;
+      opacity:0.9;
+      border-top:1px solid #262c4a;
+      padding-top:0.5rem;
+    }
+
+    /* Governance collapsible */
+    .governance-card { padding:0; overflow:hidden; }
+    .collapsible-header {
+      width:100%;
+      background:#151a30;
+      border-bottom:1px solid #262c4a;
+      padding:0.9rem 1rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      border-radius:1rem 1rem 0 0;
+      cursor:pointer;
+    }
+    .collapsible-header span:first-child {
+      flex:1; padding-right:0.5rem; font-size:0.95rem; text-align:left;
+    }
+    .chevron { font-size:0.9rem; transition:0.2s; }
+    .chevron.rotated { transform:rotate(-90deg); }
+
+    .collapsible-body { padding:1rem 1.1rem 1.1rem; font-size:0.9rem; }
+    .collapsible-body.collapsed { display:none; }
+    .collapsible-body h3 { margin-top:0.5rem; margin-bottom:0.3rem; font-size:1rem; }
+    .collapsible-body p, .collapsible-body li { font-size:0.9rem; }
+    .collapsible-body ul, .collapsible-body ol {
+      margin-left:1.1rem; margin-bottom:0.3rem;
+    }
+    .governance-footnote {
+      margin-top:0.7rem; font-size:0.85rem; opacity:0.75;
+    }
+
+    /* Modal */
+    .modal {
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.65);
+      display:flex; justify-content:center; align-items:center;
+      z-index:100;
+    }
+    .modal-content {
+      background:#151a30; padding:1.5rem; border-radius:1rem;
+      max-width:600px; max-height:80vh; overflow-y:auto;
+      border:1px solid #262c4a; position:relative;
+    }
+    .modal-content h2 { margin-bottom:0.4rem; }
+    .modal-content h3 { margin-top:0.8rem; margin-bottom:0.25rem; font-size:1rem; }
+    .modal-content p, .modal-content li { font-size:0.9rem; }
+    .modal-content ul, .modal-content ol {
+      margin-left:1.1rem; margin-bottom:0.3rem;
+    }
+    .close-btn {
+      position:absolute; top:1rem; right:1rem;
+      background:#262c4a; width:28px; height:28px;
+      border-radius:999px; border:none;
+      color:#f5f5f5; cursor:pointer; font-size:1rem;
+      line-height:28px; text-align:center;
+    }
+
+    /* Token textarea */
+    #tokenOutput {
+      width:100%;
+      min-height:80px;
+      resize:vertical;
+      border-radius:0.5rem;
+      border:1px solid #262c4a;
+      padding:0.4rem 0.5rem;
+      background:#101429;
+      color:#f5f5f5;
+      font-size:0.8rem;
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      word-break:break-all;
+    }
+
+    @media print {
+      body { background:#ffffff; color:#000000; }
+      .app-header, .camera-card, .info-card {
+        background:#ffffff; color:#000000;
+        border:1px solid #cccccc; box-shadow:none;
       }
-      .app {
-        padding: 18px 10px 28px;
-      }
+      .modal { display:none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="card">
-      <h1>Anti-Deepfake Session Token Builder</h1>
-      <p class="subtitle">
-        Generate signed Anti-Deepfake Session Tokens bound to device and optional wallet for API specs, audits, and integration tests.
-      </p>
-    </div>
+  <header class="app-header">
+    <h1>Encounter Liveness Check</h1>
+    <p>Centered camera, local-only processing, compliance-ready JSON + signed session tokens.</p>
+  </header>
 
-    <!-- Identity & Device -->
-    <div class="card">
-      <h2>1. Identity & Device Anchor</h2>
-      <div class="row">
-        <div class="label">Device ID</div>
-        <div class="value mono" id="deviceIdValue">Loading…</div>
+  <main class="app-main">
+    <!-- Camera / main card -->
+    <section class="camera-card">
+      <div class="video-container">
+        <video id="video" autoplay playsinline></video>
+        <div id="overlay" class="overlay hidden">
+          <span id="overlayText"></span>
+        </div>
       </div>
-      <div class="row">
-        <div class="label">Wallet</div>
-        <div class="value mono" id="walletAddress">Not connected</div>
+
+      <div class="controls">
+        <button id="startCameraBtn">Start camera</button>
+        <button id="stopCameraBtn" disabled>Stop camera</button>
+        <button id="runLivenessBtn" disabled>Run liveness</button>
+        <button id="startHRBtn" disabled>Start HR</button>
+        <button id="stopHRBtn" disabled>Stop HR</button>
+        <button id="helpBtn">Help</button>
       </div>
-      <div class="row">
-        <div class="label">Binding</div>
-        <div class="value">
-          <span class="small">
-            If a wallet is present: <span class="mono">did:ethr:&lt;wallet&gt;</span>.<br />
-            Otherwise: <span class="mono">did:anon:&lt;deviceId&gt;</span>.
+
+      <div class="status">
+        <div class="status-row">
+          <span>Status:</span>
+          <span id="statusText">Idle</span>
+        </div>
+        <div class="progress-wrap">
+          <label for="progressBar">Liveness progress</label>
+          <progress id="progressBar" value="0" max="100"></progress>
+        </div>
+      </div>
+
+      <div class="hr-block">
+        <div class="hr-top-row">
+          <span>
+            <span id="hrQualityDot" class="quality-dot"></span>
+            Heart rate (optical rPPG via camera):
+          </span>
+          <span class="hr-value" id="hrValue">-- bpm</span>
+        </div>
+        <div class="hr-row">
+          <span class="hr-status" id="hrStatus">
+            HR idle. Press "Start HR" and stay still ~10–20 seconds.
           </span>
         </div>
+        <div class="hr-debug" id="hrDebug"></div>
+        <p class="hr-warning">
+          Optical HR via camera is not a medical device. It must not be used for diagnosis or treatment.
+        </p>
       </div>
-      <div class="row">
-        <button id="connectWalletBtn">Connect Wallet</button>
-        <span class="status-bar" id="walletStatusText"></span>
-      </div>
-    </div>
 
-    <!-- Session fields -->
-    <div class="card">
-      <h2>2. Session Metadata</h2>
-      <div class="two-col">
-        <div>
-          <div class="row">
-            <div class="label">Encounter ID</div>
-            <div class="value">
-              <input id="encounterId" placeholder="e.g. ENC-2025-00123" />
-            </div>
+      <!-- Meta data + logging -->
+      <div class="meta-form">
+        <div class="meta-row">
+          <div class="meta-field">
+            <label for="profName">Name of issuing professional</label>
+            <input id="profName" type="text" placeholder="e.g. Moustafa Mohammed Elsayed Elsayed Ali" />
           </div>
-          <div class="row">
-            <div class="label">User label</div>
-            <div class="value">
-              <input id="userLabel" placeholder="e.g. patient-hash / client-id / email-hash" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="label">Channel</div>
-            <div class="value">
-              <select id="channel">
-                <option value="video">video</option>
-                <option value="in_person">in_person</option>
-                <option value="phone">phone</option>
-                <option value="async_upload">async_upload</option>
-              </select>
-            </div>
+          <div class="meta-field">
+            <label for="profLicense">Professional licence number</label>
+            <input id="profLicense" type="text" placeholder="e.g. PT-123456" />
           </div>
         </div>
-        <div>
-          <div class="row">
-            <div class="label">Risk level</div>
-            <div class="value">
-              <select id="riskLevel">
-                <option value="low">low</option>
-                <option value="medium">medium</option>
-                <option value="high">high</option>
-                <option value="critical">critical</option>
-              </select>
-            </div>
+        <div class="meta-row">
+          <div class="meta-field">
+            <label for="issuingAuthority">Issuing authority / organization</label>
+            <input id="issuingAuthority" type="text" placeholder="e.g. Klinik Rosenhof / Sahara Insurance / etc." />
           </div>
-          <div class="row">
-            <div class="label">TTL (minutes)</div>
-            <div class="value">
-              <input id="ttlMinutes" type="number" min="1" max="1440" value="10" />
-              <div class="small">Token validity window (iat → exp).</div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="label">Environment</div>
-            <div class="value">
-              <select id="environment">
-                <option value="dev">dev</option>
-                <option value="staging">staging</option>
-                <option value="prod">prod</option>
-              </select>
-            </div>
-          </div>
+        </div>
+        <div class="meta-actions">
+          <button id="saveLocalBtn" type="button">Save local (device)</button>
+          <button id="exportBtn" type="button">Export JSON</button>
+          <span class="log-status" id="logStatus">No logs saved yet (local-only).</span>
         </div>
       </div>
 
-      <div class="row" style="margin-top:8px;">
-        <div class="label">Notes</div>
-        <div class="value">
-          <textarea id="notes" placeholder="Optional notes for regulator, auditor, or API client."></textarea>
+      <!-- Identity + Session Token -->
+      <div class="meta-form">
+        <h3 style="margin-bottom:0.4rem;font-size:0.95rem;">Identity & Anti-Deepfake Session Token</h3>
+        <div class="meta-row">
+          <div class="meta-field">
+            <label>Device ID (local)</label>
+            <input id="deviceIdField" type="text" readonly />
+          </div>
+          <div class="meta-field">
+            <label>Wallet (optional, DID)</label>
+            <input id="walletField" type="text" readonly placeholder="Connect wallet if available" />
+          </div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-field">
+            <label for="ttlMinutes">Token validity (minutes)</label>
+            <input id="ttlMinutes" type="number" min="1" max="1440" value="10" />
+          </div>
+          <div class="meta-field">
+            <label for="encounterId">Encounter ID / reference</label>
+            <input id="encounterId" type="text" placeholder="e.g. ENC-2025-0001" />
+          </div>
+        </div>
+        <div class="meta-actions">
+          <button id="connectWalletBtn" type="button">Connect wallet</button>
+          <button id="generateTokenBtn" type="button">Generate session token</button>
+          <button id="copyTokenBtn" type="button" disabled>Copy token</button>
+          <span class="log-status" id="tokenStatus">No token generated yet.</span>
+        </div>
+        <div class="meta-row" style="margin-top:0.4rem;">
+          <div class="meta-field">
+            <label for="tokenOutput">Signed Anti-Deepfake Session Token (JWT-shaped)</label>
+            <textarea id="tokenOutput" readonly placeholder="Run liveness / HR, fill identity, then generate token."></textarea>
+          </div>
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <button id="generateBtn">Generate Session Token</button>
-        <span class="status-bar" id="generateStatus"></span>
+      <div class="disclaimer">
+        <p>
+          Developed and provided by
+          <strong>Mr. Moustafa Mohammed Elsayed Elsayed Ali</strong><br/>
+          Kronwittener Straße 1, 84367 Tann, Germany<br/>
+          E-Mail:
+          <a href="mailto:mostischmidbauer@web.de" style="color:#24d18f;">mostischmidbauer@web.de</a>,
+          <a href="mailto:agentic@virtualcaresolution.de" style="color:#24d18f;">agentic@virtualcaresolution.de</a><br/>
+          Tel: +49 1522 5321568
+        </p>
+        <p>
+          All processing runs locally in the browser. Use only within your organization’s security and data-protection
+          policies; no guarantee of identity or vital-sign accuracy by itself.
+        </p>
       </div>
-    </div>
+    </section>
 
-    <!-- Token -->
-    <div class="card">
-      <h2>3. Anti-Deepfake Session Token (JWT-shaped)</h2>
-      <textarea id="tokenOutput" class="mono" readonly placeholder="Fill session metadata and click “Generate Session Token”."></textarea>
-      <div class="row" style="margin-top:8px;">
-        <button id="copyTokenBtn" disabled>Copy Token</button>
-        <span class="status-bar" id="tokenStatusText"></span>
-      </div>
-    </div>
-
-    <!-- Decoded view -->
-    <div class="card">
-      <h2>4. Decoded Payload (for documentation)</h2>
-      <div class="two-col">
-        <div>
-          <div class="label">Header</div>
-          <pre id="headerPre" class="mono">{}</pre>
-        </div>
-        <div>
-          <div class="label">Payload</div>
-          <pre id="payloadPre" class="mono">{}</pre>
-        </div>
-      </div>
-      <div class="row" style="margin-top:8px;">
-        <div class="label">Signature</div>
-        <div class="value mono" id="sigText">—</div>
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="card">
-      <h2>How to use this tool</h2>
-      <ul class="small" style="padding-left:18px; margin: 6px 0 0;">
-        <li>Use it to define a standard Anti-Deepfake Session Token schema for your backend.</li>
-        <li>Bind each session to a stable <strong>deviceId</strong> and optional wallet-based DID.</li>
-        <li>Use the generated tokens in:
-          <ul style="margin:4px 0 0; padding-left:18px;">
-            <li>API specs / OpenAPI examples,</li>
-            <li>technical documentation for regulators,</li>
-            <li>mock integration tests with your partners.</li>
-          </ul>
-        </li>
-        <li>Signature is a fixed <span class="mono">local-demo-signature</span> so you can verify tokens with your static verifier page. In production, replace with a server-side key.</li>
+    <!-- Short description card -->
+    <section class="info-card">
+      <h2>Productive, local-only encounter tool</h2>
+      <p>This tool combines:</p>
+      <ul style="margin-left:1.1rem; margin-top:0.3rem;">
+        <li>Structured liveness check (guided head movements)</li>
+        <li>Camera-based optical heart rate estimation (rPPG)</li>
+        <li>Local JSON logging for integration into your own backend</li>
+        <li>Signed Anti-Deepfake Session Tokens bound to device and optional DID wallet</li>
       </ul>
+      <div class="compliance-badge">
+        <p>
+          <strong>Local-only:</strong> All calculations run inside the browser. No video, audio or logs are
+          automatically sent to any cloud. JSON and token export are under the full control of the issuing professional
+          or institution.
+        </p>
+      </div>
+    </section>
+
+    <!-- Governance Stakeholder Panel -->
+    <section class="info-card governance-card">
+      <button class="collapsible-header" id="governanceToggle">
+        <span>Payor / Regulator / Admin / Boards / Patient Advocates – Technical Notes</span>
+        <span class="chevron" id="governanceChevron">▼</span>
+      </button>
+
+      <div class="collapsible-body collapsed" id="governanceBody">
+        <h3>1. Purpose & Scope</h3>
+        <p>
+          This module provides a structured liveness check and a camera-based optical HR signal for
+          remote encounters. It is designed for:
+        </p>
+        <ul>
+          <li>Insurance payors and risk managers</li>
+          <li>Health regulators and data-protection authorities</li>
+          <li>Hospital / clinic administrators</li>
+          <li>Executive boards and compliance officers</li>
+          <li>Patient advocates and safety officers</li>
+        </ul>
+        <p>
+          The goal is to reduce impersonation and basic deepfake misuse in remote encounters, with
+          processing kept local and under institutional control.
+        </p>
+        <h3>2. Architecture</h3>
+        <ul>
+          <li>Runs in the browser on the client device</li>
+          <li>No external API calls required for liveness or HR or token generation</li>
+          <li>JSON logs and tokens are exported explicitly by the user and can be ingested by backend systems</li>
+        </ul>
+        <h3>3. Limitations</h3>
+        <ul>
+          <li>Not a certified medical device</li>
+          <li>Not a complete identity or fraud-prevention solution</li>
+          <li>Optical HR is for monitoring and logging only, not for diagnosis</li>
+        </ul>
+        <p class="governance-footnote">
+          This module is intended to be embedded into existing compliant workflows, where the
+          institution controls storage, retention, and audit trails according to internal policies and
+          applicable law.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Help Modal -->
+  <div id="helpModal" class="modal hidden">
+    <div class="modal-content">
+      <button id="closeHelpBtn" class="close-btn">×</button>
+      <h2>User Help – Encounter Liveness & Optical HR</h2>
+      <h3>1. Workflow</h3>
+      <ol>
+        <li>Click “Start camera” and allow access.</li>
+        <li>Center your face in the frame with even lighting.</li>
+        <li>Click “Run liveness” and follow the on-screen instructions (optional).</li>
+        <li>Click “Start HR” and remain still for 10–20 seconds.</li>
+        <li>Fill in your name, licence number and issuing authority.</li>
+        <li>Optionally generate a signed session token for this encounter.</li>
+        <li>Click “Save local” and/or “Export JSON” for your records.</li>
+        <li>Click “Stop HR” and “Stop camera” when finished.</li>
+      </ol>
+      <h3>2. Signal quality</h3>
+      <ul>
+        <li>Green dot: signal usable (HR detected in a plausible range).</li>
+        <li>Red dot: low-confidence signal – improve lighting and stability.</li>
+      </ul>
+      <h3>3. Privacy</h3>
+      <ul>
+        <li>Processing runs inside the browser.</li>
+        <li>No automatic upload of images, video, audio or logs.</li>
+        <li>JSON and token export are deliberate actions by the user.</li>
+      </ul>
+      <h3>4. Safety</h3>
+      <p>
+        Optical HR is not suitable for diagnosis, emergency decisions or therapy planning. Use it as an
+        auxiliary signal only.
+      </p>
     </div>
   </div>
 
   <script>
-    // === Utility ===
+    /* ---------- GLOBAL STATE ---------- */
+
+    let stream = null;
+    let livenessRunning = false;
+    let progressInterval = null;
+
+    const video = document.getElementById("video");
+    const startCameraBtn = document.getElementById("startCameraBtn");
+    const stopCameraBtn = document.getElementById("stopCameraBtn");
+    const runLivenessBtn = document.getElementById("runLivenessBtn");
+    const startHRBtn = document.getElementById("startHRBtn");
+    const stopHRBtn = document.getElementById("stopHRBtn");
+    const helpBtn = document.getElementById("helpBtn");
+    const closeHelpBtn = document.getElementById("closeHelpBtn");
+    const helpModal = document.getElementById("helpModal");
+    const statusText = document.getElementById("statusText");
+    const progressBar = document.getElementById("progressBar");
+    const overlay = document.getElementById("overlay");
+    const overlayText = document.getElementById("overlayText");
+
+    const hrValueEl = document.getElementById("hrValue");
+    const hrStatusEl = document.getElementById("hrStatus");
+    const hrDebugEl = document.getElementById("hrDebug");
+    const hrQualityDot = document.getElementById("hrQualityDot");
+
+    const profNameInput = document.getElementById("profName");
+    const profLicenseInput = document.getElementById("profLicense");
+    const issuingAuthorityInput = document.getElementById("issuingAuthority");
+    const saveLocalBtn = document.getElementById("saveLocalBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const logStatusEl = document.getElementById("logStatus");
+
+    const governanceToggle = document.getElementById("governanceToggle");
+    const governanceBody = document.getElementById("governanceBody");
+    const governanceChevron = document.getElementById("governanceChevron");
+
+    // Identity / token DOM
+    const deviceIdField = document.getElementById("deviceIdField");
+    const walletField = document.getElementById("walletField");
+    const ttlMinutesInput = document.getElementById("ttlMinutes");
+    const encounterIdInput = document.getElementById("encounterId");
+    const connectWalletBtn = document.getElementById("connectWalletBtn");
+    const generateTokenBtn = document.getElementById("generateTokenBtn");
+    const copyTokenBtn = document.getElementById("copyTokenBtn");
+    const tokenStatusEl = document.getElementById("tokenStatus");
+    const tokenOutputEl = document.getElementById("tokenOutput");
+
+    // Identity state
+    const hasEthereum = typeof window.ethereum !== "undefined";
+    let walletAddress = null;
+    let deviceId = null;
+
+    // Liveness log fields
+    let livenessCompleted = false;
+    let livenessStartTime = null;
+    let livenessDurationSec = null;
+
+    // HR constants
+    const HR_MIN_BPM = 45;
+    const HR_MAX_BPM = 160;
+    const HR_SAMPLE_INTERVAL_MS = 80;
+    const HR_MIN_WINDOW_SEC = 8;
+    const HR_MAX_WINDOW_SEC = 25;
+
+    // HR state
+    let hrTimer = null;
+    let hrSignal = [];
+    let hrTimestamps = [];
+    const hrCanvas = document.createElement("canvas");
+    const hrCtx = hrCanvas.getContext("2d");
+    let lastHREstimate = null;
+
+    // Face detection (optional)
+    let faceDetector = null;
+    let lastFaceBox = null;
+
+    if ("FaceDetector" in window) {
+      try {
+        faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 1 });
+      } catch (e) {
+        faceDetector = null;
+      }
+    }
+
+    /* ---------- UTILITIES ---------- */
+
+    function setStatus(text) {
+      statusText.textContent = text;
+    }
+
     function base64UrlEncode(str) {
       return btoa(str)
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/g, "");
-    }
-
-    function base64UrlDecode(str) {
-      try {
-        let s = str.replace(/-/g, "+").replace(/_/g, "/");
-        const pad = s.length % 4;
-        if (pad === 2) s += "==";
-        else if (pad === 3) s += "=";
-        else if (pad === 1) return null;
-        return atob(s);
-      } catch {
-        return null;
-      }
     }
 
     function generateSessionId() {
@@ -368,202 +673,532 @@
     }
 
     function getOrCreateDeviceId() {
-      const key = "adf_device_id";
-      let id = localStorage.getItem(key);
+      const key = "encounter_device_id";
+      let id = null;
+      try {
+        id = localStorage.getItem(key);
+      } catch (e) {
+        id = null;
+      }
       if (!id) {
         id = crypto.randomUUID ? crypto.randomUUID() : generateSessionId();
-        localStorage.setItem(key, id);
+        try {
+          localStorage.setItem(key, id);
+        } catch (e) {
+          // ignore storage errors
+        }
       }
       return id;
     }
 
-    function formatISO(tsSeconds) {
-      const d = new Date(tsSeconds * 1000);
-      return d.toISOString();
-    }
+    /* ---------- CAMERA ---------- */
 
-    function prettyJson(obj) {
+    async function startCamera() {
       try {
-        return JSON.stringify(obj, null, 2);
-      } catch {
-        return "{}";
-      }
-    }
-
-    // === State ===
-    const state = {
-      deviceId: null,
-      walletAddress: null,
-      hasEthereum: typeof window.ethereum !== "undefined",
-    };
-
-    // === DOM ===
-    const deviceIdValue = document.getElementById("deviceIdValue");
-    const walletAddressEl = document.getElementById("walletAddress");
-    const walletStatusText = document.getElementById("walletStatusText");
-    const connectWalletBtn = document.getElementById("connectWalletBtn");
-    const encounterIdInput = document.getElementById("encounterId");
-    const userLabelInput = document.getElementById("userLabel");
-    const channelSelect = document.getElementById("channel");
-    const riskLevelSelect = document.getElementById("riskLevel");
-    const ttlMinutesInput = document.getElementById("ttlMinutes");
-    const environmentSelect = document.getElementById("environment");
-    const notesInput = document.getElementById("notes");
-    const generateBtn = document.getElementById("generateBtn");
-    const generateStatus = document.getElementById("generateStatus");
-    const tokenOutput = document.getElementById("tokenOutput");
-    const copyTokenBtn = document.getElementById("copyTokenBtn");
-    const tokenStatusText = document.getElementById("tokenStatusText");
-    const headerPre = document.getElementById("headerPre");
-    const payloadPre = document.getElementById("payloadPre");
-    const sigText = document.getElementById("sigText");
-
-    // === Init device ===
-    function initDevice() {
-      const id = getOrCreateDeviceId();
-      state.deviceId = id;
-      deviceIdValue.textContent = id;
-
-      if (!state.hasEthereum) {
-        walletStatusText.innerHTML =
-          "No injected wallet detected. Identity will default to <span class='mono'>did:anon:" +
-          id +
-          "</span>. Open this page in a wallet-enabled browser to bind to <span class='mono'>did:ethr:&lt;wallet&gt;</span>.";
-      }
-    }
-
-    // === Wallet connection ===
-    async function connectWallet() {
-      tokenStatusText.textContent = "";
-      generateStatus.textContent = "";
-
-      if (!state.hasEthereum) {
-        walletStatusText.innerHTML =
-          "<strong>No wallet found.</strong> Install MetaMask or open this page inside a wallet browser if you need did:ethr binding.";
-        return;
-      }
-
-      try {
-        walletStatusText.textContent = "Requesting accounts from wallet…";
-        const accounts = await window.ethereum.request({
-          method: "eth_requestAccounts",
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
         });
-
-        if (!accounts || !accounts.length) {
-          walletStatusText.textContent = "No account selected.";
-          return;
-        }
-
-        const addr = accounts[0];
-        state.walletAddress = addr;
-        walletAddressEl.textContent = addr;
-        walletStatusText.innerHTML =
-          'Wallet bound as <span class="mono">did:ethr:' +
-          addr +
-          "</span>. Session tokens will reference this DID.";
+        video.srcObject = stream;
+        setStatus("Camera running");
+        startCameraBtn.disabled = true;
+        stopCameraBtn.disabled = false;
+        runLivenessBtn.disabled = false;
+        startHRBtn.disabled = false;
       } catch (err) {
         console.error(err);
-        walletStatusText.textContent =
-          "Wallet connection was cancelled or failed.";
+        setStatus("Cannot access camera");
       }
     }
 
-    // === Token generation ===
-    function generateToken() {
-      tokenOutput.value = "";
-      headerPre.textContent = "{}";
-      payloadPre.textContent = "{}";
-      sigText.textContent = "—";
-      copyTokenBtn.disabled = true;
-      tokenStatusText.textContent = "";
-      generateStatus.textContent = "";
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+      startCameraBtn.disabled = false;
+      stopCameraBtn.disabled = true;
+      runLivenessBtn.disabled = true;
+      startHRBtn.disabled = true;
+      stopHRBtn.disabled = true;
+      setStatus("Camera stopped");
+      stopLiveness();
+      stopHRMonitoring();
+    }
 
+    /* ---------- LIVENESS ---------- */
+
+    function showOverlay(msg) {
+      overlayText.textContent = msg;
+      overlay.classList.remove("hidden");
+    }
+
+    function hideOverlay() {
+      overlay.classList.add("hidden");
+    }
+
+    function stopLiveness() {
+      livenessRunning = false;
+      if (progressInterval) clearInterval(progressInterval);
+      progressBar.value = 0;
+      hideOverlay();
+    }
+
+    function runLiveness() {
+      if (!stream || livenessRunning) return;
+      livenessRunning = true;
+      livenessCompleted = false;
+      livenessDurationSec = null;
+      livenessStartTime = performance.now() / 1000;
+
+      const steps = [
+        { text: "Look straight into the camera", percent: 25 },
+        { text: "Turn your head slowly to the LEFT", percent: 50 },
+        { text: "Turn your head slowly to the RIGHT", percent: 75 },
+        { text: "Nod your head UP and DOWN", percent: 100 }
+      ];
+
+      let index = 0;
+      showOverlay(steps[index].text);
+      progressBar.value = steps[index].percent;
+      setStatus("Liveness running…");
+
+      progressInterval = setInterval(() => {
+        index++;
+        if (index >= steps.length) {
+          stopLiveness();
+          progressBar.value = 100;
+          setStatus("Liveness finished – review required.");
+          livenessCompleted = true;
+          if (livenessStartTime != null) {
+            livenessDurationSec = (performance.now() / 1000) - livenessStartTime;
+          }
+          return;
+        }
+        showOverlay(steps[index].text);
+        progressBar.value = steps[index].percent;
+      }, 2500);
+    }
+
+    /* ---------- HR (rPPG) ---------- */
+
+    function resetHRBuffers() {
+      hrSignal = [];
+      hrTimestamps = [];
+      lastHREstimate = null;
+    }
+
+    function startHRMonitoring() {
+      if (!stream || !video) {
+        hrStatusEl.textContent = "Start camera first.";
+        return;
+      }
+      if (hrTimer) return;
+
+      resetHRBuffers();
+      hrValueEl.textContent = "-- bpm";
+      hrStatusEl.textContent = "Collecting signal… stay still, 8–15 seconds.";
+      hrQualityDot.className = "quality-dot";
+      hrDebugEl.textContent = (faceDetector
+        ? "Face detection active (ROI follows face).\n"
+        : "No FaceDetector support – using central ROI.\n") +
+        "Debug will show samples, duration, raw & clamped BPM, quality.";
+
+      startHRBtn.disabled = true;
+      stopHRBtn.disabled = false;
+
+      hrTimer = setInterval(sampleHRFrame, HR_SAMPLE_INTERVAL_MS);
+    }
+
+    function stopHRMonitoring() {
+      if (hrTimer) {
+        clearInterval(hrTimer);
+        hrTimer = null;
+      }
+      hrStatusEl.textContent = "HR idle. Press Start HR again to re-measure.";
+      hrDebugEl.textContent = "";
+      hrQualityDot.className = "quality-dot";
+      startHRBtn.disabled = !stream;
+      stopHRBtn.disabled = true;
+    }
+
+    async function sampleHRFrame() {
+      if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+
+      let roiX, roiY, roiWidth, roiHeight;
+      let usedFace = false;
+
+      if (faceDetector) {
+        try {
+          const faces = await faceDetector.detect(video);
+          if (faces && faces.length > 0) {
+            lastFaceBox = faces[0].boundingBox;
+          }
+        } catch (e) {
+          // ignore, fallback
+        }
+      }
+
+      if (lastFaceBox) {
+        const box = lastFaceBox;
+        roiX = Math.max(0, box.x + box.width * 0.25);
+        roiWidth = Math.min(w - roiX, box.width * 0.5);
+        roiY = Math.max(0, box.y);
+        roiHeight = Math.min(h - roiY, box.height * 0.35);
+        usedFace = true;
+      } else {
+        roiWidth = Math.floor(w * 0.2);
+        roiHeight = Math.floor(h * 0.15);
+        roiX = Math.floor(w * 0.4);
+        roiY = Math.floor(h * 0.2);
+      }
+
+      hrCanvas.width = roiWidth;
+      hrCanvas.height = roiHeight;
+      hrCtx.drawImage(video, roiX, roiY, roiWidth, roiHeight, 0, 0, roiWidth, roiHeight);
+      const frame = hrCtx.getImageData(0, 0, roiWidth, roiHeight).data;
+
+      let sumG = 0;
+      let count = 0;
+      for (let i = 0; i < frame.length; i += 4) {
+        const g = frame[i + 1];
+        sumG += g;
+        count++;
+      }
+      if (count === 0) return;
+
+      const avgG = sumG / count;
+      const now = performance.now() / 1000; // seconds
+
+      hrSignal.push(avgG);
+      hrTimestamps.push(now);
+
+      while (hrTimestamps.length > 0 && (now - hrTimestamps[0]) > HR_MAX_WINDOW_SEC) {
+        hrTimestamps.shift();
+        hrSignal.shift();
+      }
+
+      const duration = hrTimestamps.length > 1
+        ? (hrTimestamps[hrTimestamps.length - 1] - hrTimestamps[0])
+        : 0;
+
+      hrDebugEl.textContent =
+        "ROI: " + (usedFace ? "face-based" : "center") +
+        " | Samples: " + hrSignal.length +
+        " | Duration: " + duration.toFixed(1) + " s";
+
+      if (duration >= HR_MIN_WINDOW_SEC) {
+        const hrEstimate = estimateHeartRateFromSignal(hrSignal, hrTimestamps);
+        if (hrEstimate) {
+          const rawBpm = hrEstimate.rawBpm;
+          const clampedBpm = hrEstimate.bpm;
+          const quality = hrEstimate.quality;
+
+          hrValueEl.textContent = Math.round(clampedBpm) + " bpm";
+
+          if (quality >= 0.05) {
+            hrStatusEl.textContent =
+              "HR estimated (usable signal, quality: " + (quality * 100).toFixed(0) + "%).";
+            hrQualityDot.className = "quality-dot green";
+          } else {
+            hrStatusEl.textContent =
+              "HR estimated (low-confidence signal, quality: " + (quality * 100).toFixed(0) + "%).";
+            hrQualityDot.className = "quality-dot red";
+          }
+
+          lastHREstimate = {
+            bpm: clampedBpm,
+            quality: quality,
+            durationSec: duration
+          };
+
+          hrDebugEl.textContent +=
+            "\nRaw BPM: " + rawBpm.toFixed(1) +
+            " | Clamped BPM: " + clampedBpm.toFixed(1) +
+            " | Quality: " + (quality * 100).toFixed(1) + "%";
+        } else {
+          hrStatusEl.textContent =
+            "No dominant HR frequency found. Improve lighting and stay very still.";
+          hrQualityDot.className = "quality-dot red";
+        }
+      } else {
+        hrStatusEl.textContent =
+          "Collecting signal (" + duration.toFixed(1) + " s)… hold still, good light.";
+      }
+    }
+
+    function estimateHeartRateFromSignal(signal, timestamps) {
+      const N = signal.length;
+      if (N < 40) return null;
+
+      let mean = 0;
+      for (let i = 0; i < N; i++) mean += signal[i];
+      mean /= N;
+
+      const x = new Array(N);
+      for (let i = 0; i < N; i++) x[i] = signal[i] - mean;
+
+      const duration = timestamps[N - 1] - timestamps[0];
+      if (duration <= 0) return null;
+      const fs = N / duration;
+
+      const minHz = HR_MIN_BPM / 60;
+      const maxHz = HR_MAX_BPM / 60;
+
+      let bestFreq = 0;
+      let bestAmp = 0;
+      let totalAmp = 0;
+
+      for (let k = 1; k < N; k++) {
+        const freq = k * fs / N;
+        if (freq < minHz || freq > maxHz) continue;
+
+        let re = 0;
+        let im = 0;
+        const angFactor = -2 * Math.PI * k / N;
+        for (let n = 0; n < N; n++) {
+          const angle = angFactor * n;
+          re += x[n] * Math.cos(angle);
+          im += x[n] * Math.sin(angle);
+        }
+        const amp = Math.sqrt(re * re + im * im);
+        if (!isFinite(amp) || amp < 0) continue;
+        totalAmp += amp;
+        if (amp > bestAmp) {
+          bestAmp = amp;
+          bestFreq = Math.abs(freq);
+        }
+      }
+
+      if (!bestFreq || bestAmp <= 0 || totalAmp <= 0) return null;
+
+      const rawBpm = bestFreq * 60;
+      if (!isFinite(rawBpm) || rawBpm <= 0) return null;
+
+      let bpm = rawBpm;
+      bpm = Math.max(HR_MIN_BPM, Math.min(HR_MAX_BPM, bpm));
+
+      const quality = Math.max(0, Math.min(1, bestAmp / totalAmp));
+
+      return { bpm, rawBpm, quality };
+    }
+
+    /* ---------- LOGGING & JSON ---------- */
+
+    function buildCurrentSummary() {
+      return {
+        timestamp: new Date().toISOString(),
+        professionalName: profNameInput.value || null,
+        professionalLicense: profLicenseInput.value || null,
+        issuingAuthority: issuingAuthorityInput.value || null,
+        livenessCompleted: livenessCompleted,
+        livenessDurationSec: livenessDurationSec,
+        hrBpm: lastHREstimate ? lastHREstimate.bpm : null,
+        hrQuality: lastHREstimate ? lastHREstimate.quality : null,
+        hrDurationSec: lastHREstimate ? lastHREstimate.durationSec : null
+      };
+    }
+
+    function saveLocalSummary() {
+      const summary = buildCurrentSummary();
+      let arr = [];
+      try {
+        const existing = localStorage.getItem("encounterLivenessHrLogs");
+        if (existing) arr = JSON.parse(existing);
+      } catch (e) {
+        arr = [];
+      }
+      arr.push(summary);
+      try {
+        localStorage.setItem("encounterLivenessHrLogs", JSON.stringify(arr));
+        logStatusEl.textContent = "Saved locally on this device (" + arr.length + " record(s)).";
+      } catch (e) {
+        logStatusEl.textContent = "Could not save to localStorage (browser policy).";
+      }
+    }
+
+    function exportSummaries() {
+      let arr = [];
+      try {
+        const existing = localStorage.getItem("encounterLivenessHrLogs");
+        if (existing) arr = JSON.parse(existing);
+      } catch (e) {
+        arr = [];
+      }
+      if (arr.length === 0) {
+        arr.push(buildCurrentSummary());
+      }
+      const blob = new Blob([JSON.stringify(arr, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "encounter_liveness_hr_logs.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      logStatusEl.textContent = "Exported " + arr.length + " record(s) as JSON.";
+    }
+
+    /* ---------- IDENTITY & TOKEN ---------- */
+
+    function initIdentity() {
+      deviceId = getOrCreateDeviceId();
+      deviceIdField.value = deviceId;
+      if (!hasEthereum) {
+        tokenStatusEl.innerHTML =
+          "No wallet provider detected. Identity will default to <span style='font-family:monospace;'>did:anon:" +
+          deviceId +
+          "</span>.";
+      }
+    }
+
+    async function connectWallet() {
+      tokenStatusEl.textContent = "";
+      if (!hasEthereum) {
+        tokenStatusEl.textContent = "No wallet found. Use a wallet-enabled browser if you want did:ethr binding.";
+        return;
+      }
+      try {
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts"
+        });
+        if (!accounts || !accounts.length) {
+          tokenStatusEl.textContent = "No wallet account selected.";
+          return;
+        }
+        walletAddress = accounts[0];
+        walletField.value = walletAddress;
+        tokenStatusEl.innerHTML =
+          "Wallet connected as <span style='font-family:monospace;'>did:ethr:" +
+          walletAddress +
+          "</span>.";
+      } catch (e) {
+        console.error(e);
+        tokenStatusEl.textContent = "Wallet connection cancelled or failed.";
+      }
+    }
+
+    function generateSessionToken() {
+      tokenOutputEl.value = "";
+      copyTokenBtn.disabled = false;
+      tokenStatusEl.textContent = "";
+
+      const ttlMinutes = parseInt(ttlMinutesInput.value, 10) || 10;
       const encId = encounterIdInput.value.trim();
-      const userLabel = userLabelInput.value.trim();
-      const channel = channelSelect.value;
-      const riskLevel = riskLevelSelect.value;
-      const ttlMinutes = parseInt(ttlMinutesInput.value, 10);
-      const environment = environmentSelect.value;
-      const notes = notesInput.value.trim();
-
-      if (!encId) {
-        generateStatus.textContent = "Encounter ID is required.";
-        return;
-      }
-      if (!ttlMinutes || ttlMinutes <= 0) {
-        generateStatus.textContent = "TTL must be a positive number of minutes.";
-        return;
-      }
 
       const nowSec = Math.floor(Date.now() / 1000);
       const expSec = nowSec + ttlMinutes * 60;
       const sessionId = generateSessionId();
 
       let did;
-      if (state.walletAddress) {
-        did = "did:ethr:" + state.walletAddress;
+      if (walletAddress) {
+        did = "did:ethr:" + walletAddress;
       } else {
-        did = "did:anon:" + state.deviceId;
+        did = "did:anon:" + deviceId;
       }
 
       const header = {
         alg: "HS256",
         typ: "JWT",
-        kid: "local-demo-key",
+        kid: "local-session-key"
       };
 
       const payload = {
         sub: did,
-        device_id: state.deviceId,
-        encounter_id: encId,
-        user_label: userLabel || null,
-        channel: channel,
-        risk_level: riskLevel,
-        environment: environment,
-        notes: notes || null,
-        check_type: "anti_deepfake_session",
+        device_id: deviceId,
+        encounter_id: encId || null,
+        professional_name: profNameInput.value || null,
+        professional_license: profLicenseInput.value || null,
+        issuing_authority: issuingAuthorityInput.value || null,
+        context: "encounter_liveness_hr",
+        liveness_completed: !!livenessCompleted,
+        liveness_duration_sec: livenessDurationSec,
+        hr_bpm: lastHREstimate ? lastHREstimate.bpm : null,
+        hr_quality: lastHREstimate ? lastHREstimate.quality : null,
+        hr_duration_sec: lastHREstimate ? lastHREstimate.durationSec : null,
         iat: nowSec,
         exp: expSec,
         jti: sessionId,
-        version: "adf-session-1.0.0",
+        version: "antideepfake-session-1.0.0"
       };
 
       const encodedHeader = base64UrlEncode(JSON.stringify(header));
       const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-      const demoSignature = base64UrlEncode("local-demo-signature");
-      const token = encodedHeader + "." + encodedPayload + "." + demoSignature;
+      const signature = base64UrlEncode("local-offline-signature"); // replace with backend key in production
 
-      tokenOutput.value = token;
-      headerPre.textContent = prettyJson(header);
-      payloadPre.textContent = prettyJson(payload);
-      sigText.textContent = demoSignature;
+      const token = encodedHeader + "." + encodedPayload + "." + signature;
+      tokenOutputEl.value = token;
       copyTokenBtn.disabled = false;
 
-      generateStatus.textContent =
-        "Session token generated and bound to " + did + ".";
+      let msg = "Session token generated and bound to " + did + ".";
+      if (!livenessCompleted) {
+        msg += " Liveness was not completed in this session.";
+      }
+      if (!lastHREstimate) {
+        msg += " HR signal not available or not finalized.";
+      }
+      tokenStatusEl.textContent = msg;
     }
 
     async function copyToken() {
-      const token = tokenOutput.value.trim();
+      const token = tokenOutputEl.value.trim();
       if (!token) return;
       try {
         await navigator.clipboard.writeText(token);
-        tokenStatusText.textContent = "Token copied to clipboard.";
-      } catch (err) {
-        console.error(err);
-        tokenStatusText.textContent =
-          "Unable to copy automatically. Please copy manually.";
+        tokenStatusEl.textContent = "Token copied to clipboard.";
+      } catch (e) {
+        console.error(e);
+        tokenStatusEl.textContent = "Unable to copy automatically. Please copy manually.";
       }
     }
 
-    // === Events ===
+    /* ---------- EVENT BINDINGS ---------- */
+
+    startCameraBtn.addEventListener("click", startCamera);
+    stopCameraBtn.addEventListener("click", stopCamera);
+    runLivenessBtn.addEventListener("click", runLiveness);
+    startHRBtn.addEventListener("click", startHRMonitoring);
+    stopHRBtn.addEventListener("click", stopHRMonitoring);
+
+    helpBtn.addEventListener("click", () => {
+      helpModal.classList.remove("hidden");
+    });
+
+    closeHelpBtn.addEventListener("click", () => {
+      helpModal.classList.add("hidden");
+    });
+
+    helpModal.addEventListener("click", (e) => {
+      if (e.target === helpModal) {
+        helpModal.classList.add("hidden");
+      }
+    });
+
+    governanceToggle.addEventListener("click", () => {
+      const collapsed = governanceBody.classList.contains("collapsed");
+      if (collapsed) {
+        governanceBody.classList.remove("collapsed");
+        governanceChevron.classList.add("rotated");
+      } else {
+        governanceBody.classList.add("collapsed");
+        governanceChevron.classList.remove("rotated");
+      }
+    });
+
+    saveLocalBtn.addEventListener("click", saveLocalSummary);
+    exportBtn.addEventListener("click", exportSummaries);
+
     connectWalletBtn.addEventListener("click", connectWallet);
-    generateBtn.addEventListener("click", generateToken);
+    generateTokenBtn.addEventListener("click", generateSessionToken);
     copyTokenBtn.addEventListener("click", copyToken);
 
-    // === Startup ===
-    initDevice();
+    // Startup
+    initIdentity();
   </script>
 </body>
 </html>
-
