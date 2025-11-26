@@ -465,7 +465,8 @@
         </p>
         <p>
           All processing runs locally in the browser. Use only within your organization’s security and data-protection
-          policies; no guarantee of identity or vital-sign accuracy by itself.
+          policies; no guarantee of identity or vital-sign accuracy by itself. Optical HR is not suitable for diagnosis
+          or emergency decisions and must be treated as an auxiliary signal only.
         </p>
       </div>
     </section>
@@ -477,7 +478,7 @@
       <ul style="margin-left:1.1rem; margin-top:0.3rem;">
         <li>Structured liveness check (guided head movements)</li>
         <li>Camera-based optical heart rate estimation (rPPG)</li>
-        <li>Local JSON logging for integration into your own backend</li>
+        <li>Local JSON logging for integration into your own backend or records</li>
         <li>Signed Anti-Deepfake Session Tokens bound to device and optional DID wallet</li>
       </ul>
       <div class="compliance-badge">
@@ -516,7 +517,7 @@
         <h3>2. Architecture</h3>
         <ul>
           <li>Runs in the browser on the client device</li>
-          <li>No external API calls required for liveness or HR or token generation</li>
+          <li>No external API calls required for liveness, HR or token generation</li>
           <li>JSON logs and tokens are exported explicitly by the user and can be ingested by backend systems</li>
         </ul>
         <h3>3. Limitations</h3>
@@ -543,7 +544,7 @@
       <ol>
         <li>Click “Start camera” and allow access.</li>
         <li>Center your face in the frame with even lighting.</li>
-        <li>Click “Run liveness” and follow the on-screen instructions (optional).</li>
+        <li>Click “Run liveness” and follow the on-screen instructions.</li>
         <li>Click “Start HR” and remain still for 10–20 seconds.</li>
         <li>Fill in your name, licence number and issuing authority.</li>
         <li>Optionally generate a signed session token for this encounter.</li>
@@ -622,6 +623,9 @@
     let walletAddress = null;
     let deviceId = null;
 
+    // shared token key for issuer + verifier pages
+    const TOKEN_KEY_STRING = "local-offline-signature";
+
     // Liveness log fields
     let livenessCompleted = false;
     let livenessStartTime = null;
@@ -654,8 +658,6 @@
       }
     }
 
-    /* ---------- UTILITIES ---------- */
-
     function setStatus(text) {
       statusText.textContent = text;
     }
@@ -684,14 +686,10 @@
         id = crypto.randomUUID ? crypto.randomUUID() : generateSessionId();
         try {
           localStorage.setItem(key, id);
-        } catch (e) {
-          // ignore storage errors
-        }
+        } catch (e) {}
       }
       return id;
     }
-
-    /* ---------- CAMERA ---------- */
 
     async function startCamera() {
       try {
@@ -726,8 +724,6 @@
       stopLiveness();
       stopHRMonitoring();
     }
-
-    /* ---------- LIVENESS ---------- */
 
     function showOverlay(msg) {
       overlayText.textContent = msg;
@@ -780,8 +776,6 @@
         progressBar.value = steps[index].percent;
       }, 2500);
     }
-
-    /* ---------- HR (rPPG) ---------- */
 
     function resetHRBuffers() {
       hrSignal = [];
@@ -838,9 +832,7 @@
           if (faces && faces.length > 0) {
             lastFaceBox = faces[0].boundingBox;
           }
-        } catch (e) {
-          // ignore, fallback
-        }
+        } catch (e) {}
       }
 
       if (lastFaceBox) {
@@ -872,7 +864,7 @@
       if (count === 0) return;
 
       const avgG = sumG / count;
-      const now = performance.now() / 1000; // seconds
+      const now = performance.now() / 1000;
 
       hrSignal.push(avgG);
       hrTimestamps.push(now);
@@ -987,8 +979,6 @@
       return { bpm, rawBpm, quality };
     }
 
-    /* ---------- LOGGING & JSON ---------- */
-
     function buildCurrentSummary() {
       return {
         timestamp: new Date().toISOString(),
@@ -1044,8 +1034,6 @@
       logStatusEl.textContent = "Exported " + arr.length + " record(s) as JSON.";
     }
 
-    /* ---------- IDENTITY & TOKEN ---------- */
-
     function initIdentity() {
       deviceId = getOrCreateDeviceId();
       deviceIdField.value = deviceId;
@@ -1085,7 +1073,7 @@
 
     function generateSessionToken() {
       tokenOutputEl.value = "";
-      copyTokenBtn.disabled = false;
+      copyTokenBtn.disabled = true;
       tokenStatusEl.textContent = "";
 
       const ttlMinutes = parseInt(ttlMinutesInput.value, 10) || 10;
@@ -1105,7 +1093,7 @@
       const header = {
         alg: "HS256",
         typ: "JWT",
-        kid: "local-session-key"
+        kid: "antideepfake-session-key"
       };
 
       const payload = {
@@ -1129,7 +1117,7 @@
 
       const encodedHeader = base64UrlEncode(JSON.stringify(header));
       const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-      const signature = base64UrlEncode("local-offline-signature"); // replace with backend key in production
+      const signature = base64UrlEncode(TOKEN_KEY_STRING); // shared with verifier
 
       const token = encodedHeader + "." + encodedPayload + "." + signature;
       tokenOutputEl.value = token;
@@ -1156,8 +1144,6 @@
         tokenStatusEl.textContent = "Unable to copy automatically. Please copy manually.";
       }
     }
-
-    /* ---------- EVENT BINDINGS ---------- */
 
     startCameraBtn.addEventListener("click", startCamera);
     stopCameraBtn.addEventListener("click", stopCamera);
@@ -1197,8 +1183,8 @@
     generateTokenBtn.addEventListener("click", generateSessionToken);
     copyTokenBtn.addEventListener("click", copyToken);
 
-    // Startup
     initIdentity();
   </script>
 </body>
 </html>
+
