@@ -2,54 +2,56 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Anti-Deepfake Liveness & Identity Layer</title>
+  <title>Anti-Deepfake Session Token Builder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #0b1020;
-      color: #f5f7ff;
+      background: #020617;
+      color: #e5e7eb;
     }
     body {
       margin: 0;
       padding: 0;
-      display: flex;
       min-height: 100vh;
-      justify-content: center;
+      display: flex;
       align-items: center;
+      justify-content: center;
     }
     .app {
-      max-width: 900px;
+      max-width: 960px;
       width: 100%;
+      padding: 24px 16px 32px;
       box-sizing: border-box;
-      padding: 24px;
     }
     .card {
-      background: rgba(17, 24, 48, 0.95);
+      background: radial-gradient(circle at top left, rgba(59, 130, 246, 0.3), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 55%),
+                  rgba(15, 23, 42, 0.96);
       border-radius: 18px;
-      padding: 20px 20px 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(99, 102, 241, 0.35);
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.4);
     }
     h1 {
-      font-size: 1.6rem;
-      margin: 0 0 4px;
+      margin: 0 0 6px;
+      font-size: 1.5rem;
     }
     .subtitle {
       font-size: 0.9rem;
-      color: #a5b4fc;
+      color: #9ca3af;
       margin-bottom: 18px;
     }
     h2 {
-      font-size: 1.05rem;
       margin: 0 0 8px;
+      font-size: 1.05rem;
       color: #e5e7eb;
     }
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       margin-bottom: 6px;
       font-size: 0.9rem;
@@ -57,10 +59,34 @@
     .label {
       font-weight: 600;
       color: #9ca3af;
-      min-width: 110px;
+      min-width: 120px;
     }
     .value {
-      color: #f9fafb;
+      flex: 1;
+    }
+    .pill {
+      font-size: 0.78rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+    .pill-dot.red {
+      background: #ef4444;
+    }
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 0.8rem;
       word-break: break-all;
     }
     button {
@@ -87,87 +113,73 @@
       box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
     }
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.6;
       cursor: not-allowed;
       box-shadow: none;
     }
-    .pill {
-      font-size: 0.78rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: rgba(15, 23, 42, 0.96);
       color: #e5e7eb;
+      padding: 6px 8px;
+      font-size: 0.84rem;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: #6b7280;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 64px;
+    }
+    .small {
+      font-size: 0.78rem;
+      color: #9ca3af;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+    .status-bar {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      min-height: 1.2em;
+    }
+    .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(148, 163, 184, 0.8);
     }
-    .pill-dot {
+    .dot {
       width: 7px;
       height: 7px;
       border-radius: 999px;
       background: #22c55e;
     }
-    .pill-dot.red {
-      background: #ef4444;
-    }
-    .mono {
-      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 0.8rem;
-    }
-    .status {
-      font-size: 0.85rem;
-      color: #9ca3af;
-      margin-top: 6px;
-      min-height: 1.2em;
-    }
-    .badge-good {
-      color: #bbf7d0;
-    }
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 8px;
-      min-height: 100px;
+    .dot.red { background: #ef4444; }
+    pre {
+      margin: 4px 0 0;
+      padding: 6px 8px;
       border-radius: 10px;
+      background: rgba(15, 23, 42, 0.96);
       border: 1px solid rgba(55, 65, 81, 0.9);
-      background: rgba(15, 23, 42, 0.95);
-      color: #e5e7eb;
-      padding: 8px;
-      resize: vertical;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
+      overflow-x: auto;
     }
-    .token-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-    .token-header small {
-      font-size: 0.75rem;
-      color: #9ca3af;
-    }
-    .token-section {
-      margin-top: 8px;
-    }
-    .two-col {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 10px;
-    }
-    .metric {
-      font-size: 0.9rem;
-      margin-bottom: 4px;
-    }
-    .metric span {
-      font-weight: 600;
-      color: #e5e7eb;
-    }
-    @media (max-width: 720px) {
+    @media (max-width: 768px) {
       .two-col {
         grid-template-columns: minmax(0, 1fr);
       }
       .app {
-        padding: 16px 12px 32px;
+        padding: 18px 10px 28px;
       }
     }
   </style>
@@ -175,9 +187,9 @@
 <body>
   <div class="app">
     <div class="card">
-      <h1>Anti-Deepfake Liveness & Identity Layer</h1>
+      <h1>Anti-Deepfake Session Token Builder</h1>
       <p class="subtitle">
-        Wallet-bound when available – otherwise device-bound. Fully static on GitHub Pages, no cloud backend.
+        Generate signed Anti-Deepfake Session Tokens bound to device and optional wallet for API specs, audits, and integration tests.
       </p>
     </div>
 
@@ -193,92 +205,137 @@
         <div class="value mono" id="walletAddress">Not connected</div>
       </div>
       <div class="row">
-        <div class="label">Status</div>
+        <div class="label">Binding</div>
         <div class="value">
-          <span class="pill" id="walletStatusPill">
-            <span class="pill-dot red"></span>
-            Wallet not connected
+          <span class="small">
+            If a wallet is present: <span class="mono">did:ethr:&lt;wallet&gt;</span>.<br />
+            Otherwise: <span class="mono">did:anon:&lt;deviceId&gt;</span>.
           </span>
         </div>
       </div>
       <div class="row">
         <button id="connectWalletBtn">Connect Wallet</button>
-        <span class="status" id="walletStatusText"></span>
+        <span class="status-bar" id="walletStatusText"></span>
       </div>
     </div>
 
-    <!-- Liveness -->
+    <!-- Session fields -->
     <div class="card">
-      <h2>2. Liveness & Anti-Deepfake Check</h2>
-      <div class="row">
-        <div class="label">Check Type</div>
-        <div class="value mono">liveness_rPPG_v1</div>
-      </div>
-      <div class="row">
-        <div class="label">Binding</div>
-        <div class="value mono">did:ethr:&lt;wallet&gt; <strong>or</strong> did:anon:&lt;deviceId&gt;</div>
-      </div>
-
-      <div class="row">
-        <button id="runLivenessBtn">Run Liveness Check</button>
-        <span class="status" id="livenessStatusText">
-          You can run liveness without a wallet. With a wallet, the token binds to did:ethr:&lt;wallet&gt;.
-        </span>
-      </div>
-
-      <div class="two-col" style="margin-top: 8px;">
+      <h2>2. Session Metadata</h2>
+      <div class="two-col">
         <div>
-          <div class="metric">
-            Heart rate: <span id="metricHr">-- bpm</span>
+          <div class="row">
+            <div class="label">Encounter ID</div>
+            <div class="value">
+              <input id="encounterId" placeholder="e.g. ENC-2025-00123" />
+            </div>
           </div>
-          <div class="metric">
-            Confidence: <span id="metricConfidence">--</span>
+          <div class="row">
+            <div class="label">User label</div>
+            <div class="value">
+              <input id="userLabel" placeholder="e.g. patient-hash / client-id / email-hash" />
+            </div>
           </div>
-          <div class="metric">
-            Result: <span id="metricResult">--</span>
+          <div class="row">
+            <div class="label">Channel</div>
+            <div class="value">
+              <select id="channel">
+                <option value="video">video</option>
+                <option value="in_person">in_person</option>
+                <option value="phone">phone</option>
+                <option value="async_upload">async_upload</option>
+              </select>
+            </div>
           </div>
         </div>
         <div>
-          <div class="metric">
-            Issued at: <span id="metricIat">--</span>
+          <div class="row">
+            <div class="label">Risk level</div>
+            <div class="value">
+              <select id="riskLevel">
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+                <option value="critical">critical</option>
+              </select>
+            </div>
           </div>
-          <div class="metric">
-            Valid until: <span id="metricExp">--</span>
+          <div class="row">
+            <div class="label">TTL (minutes)</div>
+            <div class="value">
+              <input id="ttlMinutes" type="number" min="1" max="1440" value="10" />
+              <div class="small">Token validity window (iat → exp).</div>
+            </div>
           </div>
-          <div class="metric">
-            Session ID: <span id="metricSession">--</span>
+          <div class="row">
+            <div class="label">Environment</div>
+            <div class="value">
+              <select id="environment">
+                <option value="dev">dev</option>
+                <option value="staging">staging</option>
+                <option value="prod">prod</option>
+              </select>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <div class="label">Notes</div>
+        <div class="value">
+          <textarea id="notes" placeholder="Optional notes for regulator, auditor, or API client."></textarea>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="generateBtn">Generate Session Token</button>
+        <span class="status-bar" id="generateStatus"></span>
       </div>
     </div>
 
     <!-- Token -->
     <div class="card">
-      <div class="token-header">
-        <h2>3. Liveness Token (JWT-shaped)</h2>
-        <small>
-          Signed locally for this static demo. In production, sign with a secure backend key.
-        </small>
-      </div>
-
-      <div class="token-section">
-        <textarea id="tokenOutput" class="mono" readonly placeholder="Run a liveness check to generate a token."></textarea>
-        <div class="row" style="margin-top: 8px;">
-          <button id="copyTokenBtn" disabled>Copy Token</button>
-          <span class="status" id="tokenStatusText"></span>
-        </div>
+      <h2>3. Anti-Deepfake Session Token (JWT-shaped)</h2>
+      <textarea id="tokenOutput" class="mono" readonly placeholder="Fill session metadata and click “Generate Session Token”."></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button id="copyTokenBtn" disabled>Copy Token</button>
+        <span class="status-bar" id="tokenStatusText"></span>
       </div>
     </div>
 
-    <!-- Info -->
+    <!-- Decoded view -->
     <div class="card">
-      <h2>How this model works (summary)</h2>
-      <ul style="font-size:0.85rem; color:#9ca3af; padding-left:18px; margin: 6px 0 0;">
-        <li>If a wallet is connected, identity = <span class="mono">did:ethr:&lt;wallet&gt;</span>.</li>
-        <li>If no wallet is available, identity = <span class="mono">did:anon:&lt;deviceId&gt;</span>.</li>
-        <li>Each browser has a stable, pseudonymous <strong>deviceId</strong> stored locally (no server).</li>
-        <li>On “Run Liveness Check”, this page simulates a liveness result and issues a short-lived JWT-shaped token.</li>
-        <li>Your production system can replace the simulation with a real rPPG / anti-deepfake pipeline and move signing into a secure backend.</li>
+      <h2>4. Decoded Payload (for documentation)</h2>
+      <div class="two-col">
+        <div>
+          <div class="label">Header</div>
+          <pre id="headerPre" class="mono">{}</pre>
+        </div>
+        <div>
+          <div class="label">Payload</div>
+          <pre id="payloadPre" class="mono">{}</pre>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div class="label">Signature</div>
+        <div class="value mono" id="sigText">—</div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="card">
+      <h2>How to use this tool</h2>
+      <ul class="small" style="padding-left:18px; margin: 6px 0 0;">
+        <li>Use it to define a standard Anti-Deepfake Session Token schema for your backend.</li>
+        <li>Bind each session to a stable <strong>deviceId</strong> and optional wallet-based DID.</li>
+        <li>Use the generated tokens in:
+          <ul style="margin:4px 0 0; padding-left:18px;">
+            <li>API specs / OpenAPI examples,</li>
+            <li>technical documentation for regulators,</li>
+            <li>mock integration tests with your partners.</li>
+          </ul>
+        </li>
+        <li>Signature is a fixed <span class="mono">local-demo-signature</span> so you can verify tokens with your static verifier page. In production, replace with a server-side key.</li>
       </ul>
     </div>
   </div>
@@ -292,13 +349,26 @@
         .replace(/=+$/g, "");
     }
 
+    function base64UrlDecode(str) {
+      try {
+        let s = str.replace(/-/g, "+").replace(/_/g, "/");
+        const pad = s.length % 4;
+        if (pad === 2) s += "==";
+        else if (pad === 3) s += "=";
+        else if (pad === 1) return null;
+        return atob(s);
+      } catch {
+        return null;
+      }
+    }
+
     function generateSessionId() {
       const random = crypto.getRandomValues(new Uint8Array(16));
       return Array.from(random, (b) => b.toString(16).padStart(2, "0")).join("");
     }
 
     function getOrCreateDeviceId() {
-      const key = "liveness_device_id";
+      const key = "adf_device_id";
       let id = localStorage.getItem(key);
       if (!id) {
         id = crypto.randomUUID ? crypto.randomUUID() : generateSessionId();
@@ -307,9 +377,17 @@
       return id;
     }
 
-    function formatTimestamp(tsSeconds) {
+    function formatISO(tsSeconds) {
       const d = new Date(tsSeconds * 1000);
       return d.toISOString();
+    }
+
+    function prettyJson(obj) {
+      try {
+        return JSON.stringify(obj, null, 2);
+      } catch {
+        return "{}";
+      }
     }
 
     // === State ===
@@ -319,23 +397,26 @@
       hasEthereum: typeof window.ethereum !== "undefined",
     };
 
-    // === DOM Elements ===
+    // === DOM ===
     const deviceIdValue = document.getElementById("deviceIdValue");
     const walletAddressEl = document.getElementById("walletAddress");
-    const walletStatusPill = document.getElementById("walletStatusPill");
     const walletStatusText = document.getElementById("walletStatusText");
     const connectWalletBtn = document.getElementById("connectWalletBtn");
-    const runLivenessBtn = document.getElementById("runLivenessBtn");
-    const livenessStatusText = document.getElementById("livenessStatusText");
-    const metricHr = document.getElementById("metricHr");
-    const metricConfidence = document.getElementById("metricConfidence");
-    const metricResult = document.getElementById("metricResult");
-    const metricIat = document.getElementById("metricIat");
-    const metricExp = document.getElementById("metricExp");
-    const metricSession = document.getElementById("metricSession");
+    const encounterIdInput = document.getElementById("encounterId");
+    const userLabelInput = document.getElementById("userLabel");
+    const channelSelect = document.getElementById("channel");
+    const riskLevelSelect = document.getElementById("riskLevel");
+    const ttlMinutesInput = document.getElementById("ttlMinutes");
+    const environmentSelect = document.getElementById("environment");
+    const notesInput = document.getElementById("notes");
+    const generateBtn = document.getElementById("generateBtn");
+    const generateStatus = document.getElementById("generateStatus");
     const tokenOutput = document.getElementById("tokenOutput");
     const copyTokenBtn = document.getElementById("copyTokenBtn");
     const tokenStatusText = document.getElementById("tokenStatusText");
+    const headerPre = document.getElementById("headerPre");
+    const payloadPre = document.getElementById("payloadPre");
+    const sigText = document.getElementById("sigText");
 
     // === Init device ===
     function initDevice() {
@@ -345,20 +426,20 @@
 
       if (!state.hasEthereum) {
         walletStatusText.innerHTML =
-          "No injected wallet detected. You can still run liveness; token will bind to <span class='mono'>did:anon:" +
+          "No injected wallet detected. Identity will default to <span class='mono'>did:anon:" +
           id +
-          "</span>. Open this page in MetaMask or a desktop browser with a wallet to bind to <span class='mono'>did:ethr:&lt;wallet&gt;</span>.";
+          "</span>. Open this page in a wallet-enabled browser to bind to <span class='mono'>did:ethr:&lt;wallet&gt;</span>.";
       }
     }
 
     // === Wallet connection ===
     async function connectWallet() {
       tokenStatusText.textContent = "";
-      livenessStatusText.textContent = "";
+      generateStatus.textContent = "";
 
       if (!state.hasEthereum) {
         walletStatusText.innerHTML =
-          "<strong>No wallet found.</strong> Install MetaMask or open this page inside a wallet browser if you want did:ethr binding.";
+          "<strong>No wallet found.</strong> Install MetaMask or open this page inside a wallet browser if you need did:ethr binding.";
         return;
       }
 
@@ -376,16 +457,10 @@
         const addr = accounts[0];
         state.walletAddress = addr;
         walletAddressEl.textContent = addr;
-
-        walletStatusPill.innerHTML =
-          '<span class="pill-dot"></span> Wallet connected';
         walletStatusText.innerHTML =
           'Wallet bound as <span class="mono">did:ethr:' +
           addr +
-          "</span>. Liveness tokens will reference this DID.";
-
-        livenessStatusText.textContent =
-          "Ready. Click “Run Liveness Check” to generate a token.";
+          "</span>. Session tokens will reference this DID.";
       } catch (err) {
         console.error(err);
         walletStatusText.textContent =
@@ -393,47 +468,37 @@
       }
     }
 
-    // === Simulated liveness ===
-    function simulateLiveness() {
-      const hr = 70 + Math.floor(Math.random() * 16); // 70–85 bpm
-      const confidence = 0.93 + Math.random() * 0.05; // 0.93–0.98
-      return { hr, confidence: Number(confidence.toFixed(3)) };
-    }
-
-    async function runLiveness() {
+    // === Token generation ===
+    function generateToken() {
       tokenOutput.value = "";
-      tokenStatusText.textContent = "";
-      metricHr.textContent = "-- bpm";
-      metricConfidence.textContent = "--";
-      metricResult.textContent = "--";
-      metricIat.textContent = "--";
-      metricExp.textContent = "--";
-      metricSession.textContent = "--";
+      headerPre.textContent = "{}";
+      payloadPre.textContent = "{}";
+      sigText.textContent = "—";
       copyTokenBtn.disabled = true;
+      tokenStatusText.textContent = "";
+      generateStatus.textContent = "";
 
-      runLivenessBtn.disabled = true;
-      runLivenessBtn.textContent = "Running…";
+      const encId = encounterIdInput.value.trim();
+      const userLabel = userLabelInput.value.trim();
+      const channel = channelSelect.value;
+      const riskLevel = riskLevelSelect.value;
+      const ttlMinutes = parseInt(ttlMinutesInput.value, 10);
+      const environment = environmentSelect.value;
+      const notes = notesInput.value.trim();
 
-      if (state.walletAddress) {
-        livenessStatusText.textContent =
-          "Running liveness bound to did:ethr:" + state.walletAddress + "…";
-      } else {
-        livenessStatusText.textContent =
-          "Running liveness bound to device-only DID did:anon:" +
-          state.deviceId +
-          "…";
+      if (!encId) {
+        generateStatus.textContent = "Encounter ID is required.";
+        return;
+      }
+      if (!ttlMinutes || ttlMinutes <= 0) {
+        generateStatus.textContent = "TTL must be a positive number of minutes.";
+        return;
       }
 
-      // Simulate processing delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const { hr, confidence } = simulateLiveness();
       const nowSec = Math.floor(Date.now() / 1000);
-      const validForSeconds = 600; // 10 minutes
-      const expSec = nowSec + validForSeconds;
+      const expSec = nowSec + ttlMinutes * 60;
       const sessionId = generateSessionId();
 
-      // Identity selection
       let did;
       if (state.walletAddress) {
         did = "did:ethr:" + state.walletAddress;
@@ -450,14 +515,17 @@
       const payload = {
         sub: did,
         device_id: state.deviceId,
-        check_type: "liveness_rPPG_v1",
-        result: "pass",
-        confidence: confidence,
-        hr_bpm: hr,
+        encounter_id: encId,
+        user_label: userLabel || null,
+        channel: channel,
+        risk_level: riskLevel,
+        environment: environment,
+        notes: notes || null,
+        check_type: "anti_deepfake_session",
         iat: nowSec,
         exp: expSec,
         jti: sessionId,
-        model_version: "liveness-2.1.0",
+        version: "adf-session-1.0.0",
       };
 
       const encodedHeader = base64UrlEncode(JSON.stringify(header));
@@ -465,31 +533,19 @@
       const demoSignature = base64UrlEncode("local-demo-signature");
       const token = encodedHeader + "." + encodedPayload + "." + demoSignature;
 
-      // Update metrics
-      metricHr.textContent = hr + " bpm";
-      metricConfidence.textContent = (confidence * 100).toFixed(1) + " %";
-      metricResult.innerHTML = '<span class="badge-good">PASS</span>';
-      metricIat.textContent = formatTimestamp(nowSec);
-      metricExp.textContent = formatTimestamp(expSec);
-      metricSession.textContent = sessionId;
-
-      // Update token
       tokenOutput.value = token;
+      headerPre.textContent = prettyJson(header);
+      payloadPre.textContent = prettyJson(payload);
+      sigText.textContent = demoSignature;
       copyTokenBtn.disabled = false;
 
-      livenessStatusText.innerHTML =
-        "Liveness completed. Token is bound to <span class=\"mono\">" +
-        did +
-        "</span> and deviceId.";
-
-      runLivenessBtn.disabled = false;
-      runLivenessBtn.textContent = "Run Liveness Check";
+      generateStatus.textContent =
+        "Session token generated and bound to " + did + ".";
     }
 
     async function copyToken() {
       const token = tokenOutput.value.trim();
       if (!token) return;
-
       try {
         await navigator.clipboard.writeText(token);
         tokenStatusText.textContent = "Token copied to clipboard.";
@@ -500,9 +556,9 @@
       }
     }
 
-    // === Event listeners ===
+    // === Events ===
     connectWalletBtn.addEventListener("click", connectWallet);
-    runLivenessBtn.addEventListener("click", runLiveness);
+    generateBtn.addEventListener("click", generateToken);
     copyTokenBtn.addEventListener("click", copyToken);
 
     // === Startup ===
@@ -510,3 +566,4 @@
   </script>
 </body>
 </html>
+
