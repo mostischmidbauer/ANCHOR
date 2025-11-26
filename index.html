@@ -120,17 +120,8 @@
       margin-top: 6px;
       min-height: 1.2em;
     }
-    .status strong {
-      color: #e5e7eb;
-    }
     .badge-good {
       color: #bbf7d0;
-    }
-    .badge-warn {
-      color: #fde68a;
-    }
-    .badge-bad {
-      color: #fecaca;
     }
     textarea {
       width: 100%;
@@ -186,7 +177,7 @@
     <div class="card">
       <h1>Anti-Deepfake Liveness & Identity Layer</h1>
       <p class="subtitle">
-        Wallet-bound, device-bound liveness token &mdash; all static, runs entirely in your browser on GitHub Pages.
+        Wallet-bound when available – otherwise device-bound. Fully static on GitHub Pages, no cloud backend.
       </p>
     </div>
 
@@ -225,13 +216,13 @@
       </div>
       <div class="row">
         <div class="label">Binding</div>
-        <div class="value mono">did:ethr:&lt;wallet&gt; + deviceId</div>
+        <div class="value mono">did:ethr:&lt;wallet&gt; <strong>or</strong> did:anon:&lt;deviceId&gt;</div>
       </div>
 
       <div class="row">
-        <button id="runLivenessBtn" disabled>Run Liveness Check</button>
+        <button id="runLivenessBtn">Run Liveness Check</button>
         <span class="status" id="livenessStatusText">
-          Connect a wallet to activate liveness.
+          You can run liveness without a wallet. With a wallet, the token binds to did:ethr:&lt;wallet&gt;.
         </span>
       </div>
 
@@ -266,7 +257,7 @@
       <div class="token-header">
         <h2>3. Liveness Token (JWT-shaped)</h2>
         <small>
-          Signed locally for this static version. In production, sign with a secure backend key.
+          Signed locally for this static demo. In production, sign with a secure backend key.
         </small>
       </div>
 
@@ -283,9 +274,10 @@
     <div class="card">
       <h2>How this model works (summary)</h2>
       <ul style="font-size:0.85rem; color:#9ca3af; padding-left:18px; margin: 6px 0 0;">
-        <li>Identity = <span class="mono">did:ethr:&lt;wallet&gt;</span> (derived from your connected wallet).</li>
+        <li>If a wallet is connected, identity = <span class="mono">did:ethr:&lt;wallet&gt;</span>.</li>
+        <li>If no wallet is available, identity = <span class="mono">did:anon:&lt;deviceId&gt;</span>.</li>
         <li>Each browser has a stable, pseudonymous <strong>deviceId</strong> stored locally (no server).</li>
-        <li>On "Run Liveness Check", this page simulates a liveness result and issues a short-lived, JWT-shaped token.</li>
+        <li>On “Run Liveness Check”, this page simulates a liveness result and issues a short-lived JWT-shaped token.</li>
         <li>Your production system can replace the simulation with a real rPPG / anti-deepfake pipeline and move signing into a secure backend.</li>
       </ul>
     </div>
@@ -353,7 +345,9 @@
 
       if (!state.hasEthereum) {
         walletStatusText.innerHTML =
-          "No injected wallet detected. Install MetaMask or a compatible wallet to bind liveness to a DID.";
+          "No injected wallet detected. You can still run liveness; token will bind to <span class='mono'>did:anon:" +
+          id +
+          "</span>. Open this page in MetaMask or a desktop browser with a wallet to bind to <span class='mono'>did:ethr:&lt;wallet&gt;</span>.";
       }
     }
 
@@ -364,7 +358,7 @@
 
       if (!state.hasEthereum) {
         walletStatusText.innerHTML =
-          "<strong>No wallet found.</strong> Please install MetaMask or another EVM wallet.";
+          "<strong>No wallet found.</strong> Install MetaMask or open this page inside a wallet browser if you want did:ethr binding.";
         return;
       }
 
@@ -388,9 +382,8 @@
         walletStatusText.innerHTML =
           'Wallet bound as <span class="mono">did:ethr:' +
           addr +
-          "</span>";
+          "</span>. Liveness tokens will reference this DID.";
 
-        runLivenessBtn.disabled = false;
         livenessStatusText.textContent =
           "Ready. Click “Run Liveness Check” to generate a token.";
       } catch (err) {
@@ -402,8 +395,6 @@
 
     // === Simulated liveness ===
     function simulateLiveness() {
-      // In your production system, plug in your real camera + rPPG pipeline here.
-      // We just simulate a plausible HR + confidence.
       const hr = 70 + Math.floor(Math.random() * 16); // 70–85 bpm
       const confidence = 0.93 + Math.random() * 0.05; // 0.93–0.98
       return { hr, confidence: Number(confidence.toFixed(3)) };
@@ -420,16 +411,18 @@
       metricSession.textContent = "--";
       copyTokenBtn.disabled = true;
 
-      if (!state.walletAddress) {
-        livenessStatusText.textContent =
-          "Connect a wallet first to bind the session.";
-        return;
-      }
-
       runLivenessBtn.disabled = true;
       runLivenessBtn.textContent = "Running…";
-      livenessStatusText.textContent =
-        "Running local liveness pipeline (simulated)…";
+
+      if (state.walletAddress) {
+        livenessStatusText.textContent =
+          "Running liveness bound to did:ethr:" + state.walletAddress + "…";
+      } else {
+        livenessStatusText.textContent =
+          "Running liveness bound to device-only DID did:anon:" +
+          state.deviceId +
+          "…";
+      }
 
       // Simulate processing delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -440,8 +433,13 @@
       const expSec = nowSec + validForSeconds;
       const sessionId = generateSessionId();
 
-      // Build JWT-shaped token
-      const did = "did:ethr:" + state.walletAddress;
+      // Identity selection
+      let did;
+      if (state.walletAddress) {
+        did = "did:ethr:" + state.walletAddress;
+      } else {
+        did = "did:anon:" + state.deviceId;
+      }
 
       const header = {
         alg: "HS256",
@@ -464,9 +462,6 @@
 
       const encodedHeader = base64UrlEncode(JSON.stringify(header));
       const encodedPayload = base64UrlEncode(JSON.stringify(payload));
-
-      // In a real system, sign encodedHeader + "." + encodedPayload with a server-side key.
-      // Here we use a fixed demo string to keep this file fully static.
       const demoSignature = base64UrlEncode("local-demo-signature");
       const token = encodedHeader + "." + encodedPayload + "." + demoSignature;
 
@@ -481,6 +476,7 @@
       // Update token
       tokenOutput.value = token;
       copyTokenBtn.disabled = false;
+
       livenessStatusText.innerHTML =
         "Liveness completed. Token is bound to <span class=\"mono\">" +
         did +
